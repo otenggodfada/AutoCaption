@@ -1810,7 +1810,7 @@ const Editor = () => {
       {/* Export Modal */}
       {showExportModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-dark/90 rounded-xl p-6 max-w-md w-full">
+          <div className="bg-dark/90 rounded-xl p-6 max-w-md m-4 w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Exporting Video</h3>
               {!isExporting && (
