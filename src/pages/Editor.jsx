@@ -1137,7 +1137,7 @@ const Editor = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Video Player with Captions */}
       <div className="lg:col-span-2">
-        <div className="bg-dark/50 rounded-xl p-4 border border-light/10">
+        <div className="sticky top-20 z-20 md:static bg-dark/50 rounded-xl p-4 border border-light/10">
           <div className="relative aspect-video">
             <video
               ref={videoRef}
@@ -1625,7 +1625,7 @@ const Editor = () => {
 
           {/* Export Options */}
             {/* Export Options */}
-            <div className="mt-4 bg-dark/50 rounded-xl p-4 border border-light/10">
+          <div className="mt-4 bg-dark/50 rounded-xl p-4 border border-light/10">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Export Video</h3>
               <div className="flex items-center space-x-2">
