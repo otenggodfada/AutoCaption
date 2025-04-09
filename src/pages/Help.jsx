@@ -34,7 +34,7 @@ const Help = () => {
         {
           question: "What video formats are supported?",
           answer:
-            "Currently, we support MP4 format videos. We recommend using H.264 codec for best compatibility.",
+            "We support a wide range of video and audio formats including MP4, MOV, AVI, WMV, WEBM, MKV, FLV, 3GP, TS, MP3, and WAV. We recommend using H.264 codec for video files for best compatibility.",
         },
       ],
     },

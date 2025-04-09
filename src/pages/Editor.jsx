@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
+import html2canvas from "html2canvas";
 
 const captionThemes = {
   default: {
@@ -760,7 +761,7 @@ const Editor = () => {
       streamVideo.src = videoUrl;
       streamVideo.crossOrigin = "anonymous";
       streamVideo.preload = "auto";
-      streamVideo.muted = false;
+      streamVideo.muted = true;
       streamVideo.playbackRate = 1.0; // Ensure normal playback speed
 
       // Wait for video to be ready
@@ -879,7 +880,7 @@ const Editor = () => {
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `video_with_captions.${exportFormat}`;
+          a.download = `delpcap.${exportFormat}`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -890,15 +891,20 @@ const Editor = () => {
           audioContext.close();
         };
 
-        // Get the selected theme's styles
-        const theme = captionThemes[selectedTheme];
-        const themeStyle = theme.style;
-
         // Start recording
         mediaRecorder.start(100);
 
         // Start progress tracking
         requestAnimationFrame(updateProgress);
+
+        // Create a container for captions
+        const captionContainer = document.createElement("div");
+        captionContainer.style.position = "absolute";
+        captionContainer.style.left = "-9999px";
+        captionContainer.style.top = "-9999px";
+        captionContainer.style.width = `${canvas.width}px`;
+        captionContainer.style.height = `${canvas.height}px`;
+        document.body.appendChild(captionContainer);
 
         // Render frames with captions
         const renderFrame = async (timestamp) => {
@@ -919,7 +925,10 @@ const Editor = () => {
                 (u) => currentTime >= u.start && currentTime <= u.end
               );
 
-              // Draw captions for active utterances
+              // Clear previous captions
+              captionContainer.innerHTML = "";
+
+              // Create and style captions
               activeUtterances.forEach((utterance) => {
                 const words = utterance.text.split(" ");
                 const wordDuration =
@@ -957,143 +966,68 @@ const Editor = () => {
                         ? (1 - progress) * 10
                         : 1;
 
-                    // Draw text with theme style
-                    ctx.save();
-                    ctx.globalAlpha = opacity;
-                    ctx.font = `${themeStyle.fontSize || "24px"} ${
-                      themeStyle.fontFamily || "Arial"
-                    }`;
+                    // Create caption element
+                    const captionElement = document.createElement("div");
+                    captionElement.className =
+                      captionThemes[selectedTheme].className;
 
-                    // Get text color from theme
-                    let textColor = themeStyle.color;
-                    if (!textColor) {
-                      // If theme uses className for color, extract it
-                      const colorClass = theme.className
-                        .split(" ")
-                        .find((cls) => cls.includes("text-"));
-                      if (colorClass) {
-                        switch (colorClass) {
-                          case "text-white":
-                            textColor = "#ffffff";
-                            break;
-                          case "text-black":
-                            textColor = "#000000";
-                            break;
-                          default:
-                            textColor = "#ffffff"; // Default to white
-                        }
-                      } else {
-                        textColor = "#ffffff"; // Default to white if no color specified
-                      }
-                    }
-                    ctx.fillStyle = textColor;
+                    // Apply all theme styles
+                    const themeStyle = captionThemes[selectedTheme].style;
+                    Object.entries(themeStyle).forEach(([key, value]) => {
+                      // Convert camelCase to kebab-case for CSS properties
+                      const cssKey = key
+                        .replace(/([A-Z])/g, "-$1")
+                        .toLowerCase();
+                      captionElement.style[cssKey] = value;
+                    });
 
-                    // Get background color from theme
-                    let bgColor = themeStyle.backgroundColor;
-                    if (!bgColor) {
-                      // If theme uses className for background, extract it
-                      const bgClass = theme.className
-                        .split(" ")
-                        .find((cls) => cls.includes("bg-"));
-                      if (bgClass) {
-                        switch (bgClass) {
-                          case "bg-black/80":
-                            bgColor = "rgba(0, 0, 0, 0.8)";
-                            break;
-                          case "bg-white/80":
-                            bgColor = "rgba(255, 255, 255, 0.8)";
-                            break;
-                          case "bg-transparent":
-                            bgColor = "transparent";
-                            break;
-                          case "bg-yellow-400/90":
-                            bgColor = "rgba(250, 204, 21, 0.9)";
-                            break;
-                          case "bg-black/60":
-                            bgColor = "rgba(0, 0, 0, 0.6)";
-                            break;
-                          case "bg-white/10":
-                            bgColor = "rgba(255, 255, 255, 0.1)";
-                            break;
-                          default:
-                            bgColor = "rgba(0, 0, 0, 0.8)"; // Default background
-                        }
-                      }
+                    // Ensure border radius is applied
+                    if (themeStyle.borderRadius) {
+                      captionElement.style.borderRadius =
+                        themeStyle.borderRadius;
                     }
 
-                    // Draw background with proper color
-                    const textMetrics = ctx.measureText(currentChunk.text);
-                    const padding =
-                      parseInt(themeStyle.padding?.split(" ")[0]) || 10;
-
-                    if (bgColor && bgColor !== "transparent") {
-                      ctx.save();
-                      ctx.globalAlpha = opacity * 0.8;
-
-                      // Handle gradient background
-                      if (theme.className.includes("bg-gradient-to-r")) {
-                        const gradient = ctx.createLinearGradient(
-                          canvas.width / 2 - textMetrics.width / 2 - padding,
-                          0,
-                          canvas.width / 2 + textMetrics.width / 2 + padding,
-                          0
-                        );
-                        gradient.addColorStop(0, "rgba(0, 0, 0, 0.8)");
-                        gradient.addColorStop(1, "rgba(0, 0, 0, 0.6)");
-                        ctx.fillStyle = gradient;
-                      } else {
-                        ctx.fillStyle = bgColor;
-                      }
-
-                      // Apply background with border radius if specified
-                      const radius = parseInt(themeStyle.borderRadius) || 0;
-                      if (radius > 0) {
-                        ctx.beginPath();
-                        ctx.roundRect(
-                          canvas.width / 2 - textMetrics.width / 2 - padding,
-                          canvas.height - 70,
-                          textMetrics.width + padding * 2,
-                          40,
-                          radius
-                        );
-                        ctx.fill();
-                      } else {
-                        ctx.fillRect(
-                          canvas.width / 2 - textMetrics.width / 2 - padding,
-                          canvas.height - 70,
-                          textMetrics.width + padding * 2,
-                          40
-                        );
-                      }
-                      ctx.restore();
-                    }
-
-                    // Apply text shadow if specified
-                    if (themeStyle.textShadow) {
-                      const shadowParts = themeStyle.textShadow.split(" ");
-                      ctx.shadowColor = shadowParts[3] || "rgba(0,0,0,0.8)";
-                      ctx.shadowBlur = parseInt(shadowParts[2]) || 0;
-                      ctx.shadowOffsetX = parseInt(shadowParts[0]) || 0;
-                      ctx.shadowOffsetY = parseInt(shadowParts[1]) || 0;
-                    }
-
-                    // Apply text transform if specified
-                    let text = currentChunk.text;
-                    if (themeStyle.textTransform === "uppercase") {
-                      text = text.toUpperCase();
-                    } else if (themeStyle.textTransform === "lowercase") {
-                      text = text.toLowerCase();
-                    }
-
-                    // Draw text with proper color and style
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillStyle = textColor;
-                    ctx.fillText(text, canvas.width / 2, canvas.height - 50);
-                    ctx.restore();
+                    // Position the caption
+                    captionElement.style.position = "absolute";
+                    captionElement.style.left = "50%";
+                    captionElement.style.bottom = "8%"; // Position at bottom of video
+                    captionElement.style.transform = "translateX(-50%)";
+                    captionElement.style.opacity = opacity;
+                    captionElement.style.maxWidth = "90%";
+                    captionElement.style.textAlign = "center";
+                    captionElement.style.padding =
+                      themeStyle.padding || "2px 4px";
+                    captionElement.style.whiteSpace = "pre-wrap";
+                    captionElement.style.wordBreak = "break-word";
+                    captionElement.textContent = currentChunk.text;
+                    captionContainer.appendChild(captionElement);
                   }
                 }
               });
+
+              // Capture captions using html2canvas
+              if (captionContainer.children.length > 0) {
+                try {
+                  const captionCanvas = await html2canvas(captionContainer, {
+                    backgroundColor: null,
+                    scale: 1,
+                    useCORS: true,
+                    logging: false,
+                    allowTaint: true,
+                  });
+
+                  // Draw captions onto main canvas
+                  ctx.drawImage(
+                    captionCanvas,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                  );
+                } catch (error) {
+                  console.error("Error capturing captions:", error);
+                }
+              }
             }
 
             requestAnimationFrame(renderFrame);
@@ -1110,6 +1044,7 @@ const Editor = () => {
         streamVideo.onended = () => {
           mediaRecorder.stop();
           streamVideo.pause();
+          document.body.removeChild(captionContainer);
         };
       } catch (error) {
         console.error("Stream creation error:", error);
@@ -1624,7 +1559,6 @@ const Editor = () => {
           </div>
 
           {/* Export Options */}
-            {/* Export Options */}
           <div className="mt-4 bg-dark/50 rounded-xl p-4 border border-light/10">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Export Video</h3>

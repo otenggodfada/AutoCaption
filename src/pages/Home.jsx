@@ -39,11 +39,14 @@ const Home = () => {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file && file.type === "video/mp4") {
+    if (
+      file &&
+      (file.type.startsWith("video/") || file.type.startsWith("audio/"))
+    ) {
       setVideoFile(file);
       navigate("/editor", { state: { videoFile: file } });
     } else {
-      alert("Please upload a valid MP4 video file");
+      alert("Please upload a valid video or audio file");
     }
   };
 
@@ -60,11 +63,14 @@ const Home = () => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
-    if (file && file.type === "video/mp4") {
+    if (
+      file &&
+      (file.type.startsWith("video/") || file.type.startsWith("audio/"))
+    ) {
       setVideoFile(file);
       navigate("/editor", { state: { videoFile: file } });
     } else {
-      alert("Please upload a valid MP4 video file");
+      alert("Please upload a valid video or audio file");
     }
   };
 
@@ -151,7 +157,7 @@ const Home = () => {
               </div>
               <p className="text-2xl font-semibold">Upload Your Video</p>
               <p className="text-light/60">
-                Drag and drop your MP4 video here, or click the button below to
+                Drag and drop your video here, or click the button below to
                 select a file
               </p>
               <motion.label
@@ -161,7 +167,7 @@ const Home = () => {
               >
                 <input
                   type="file"
-                  accept="video/mp4"
+                  accept="video/*,audio/*"
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -169,7 +175,8 @@ const Home = () => {
                 <ArrowRightIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </motion.label>
               <p className="text-sm text-light/40 mt-4">
-                Supported format: MP4
+                Supported formats: MP4, MOV, AVI, WMV, WEBM, MKV, FLV, 3GP, TS,
+                MP3, WAV
               </p>
             </motion.div>
           </div>
@@ -266,7 +273,7 @@ const Home = () => {
                 </h3>
                 <p className="text-light/60">
                   {step === 1
-                    ? "Upload your MP4 video file"
+                    ? "Upload your video file"
                     : step === 2
                     ? "AI generates accurate captions"
                     : step === 3
@@ -306,7 +313,7 @@ const Home = () => {
           >
             <input
               type="file"
-              accept="video/mp4"
+              accept="video/*,audio/*"
               onChange={handleFileChange}
               className="hidden"
             />
